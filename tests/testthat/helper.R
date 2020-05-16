@@ -3,7 +3,7 @@ df <- function(key, file, dir = FALSE) {
   data.frame(
     stringsAsFactors = FALSE,
     key = key,
-    file = file,
+    files = file,
     dir = dir
   )
 }
@@ -42,6 +42,10 @@ make_big_file1 <- function(file, mb) {
 
 bns <- function(x) {
   paste0(basename(x), "/")
+}
+
+bnn <- function(x) {
+  basename(normalizePath(x))
 }
 
 test_temp_file <- function(fileext = "", pattern = "test-file-",

@@ -7,17 +7,41 @@
 \alias{zipr_append}
 \title{Compress Files into 'zip' Archives}
 \usage{
-zip(zipfile, files, recurse = TRUE, compression_level = 9,
-  include_directories = TRUE)
+zip(
+  zipfile,
+  files,
+  recurse = TRUE,
+  compression_level = 9,
+  include_directories = TRUE,
+  keys = files
+)
 
-zipr(zipfile, files, recurse = TRUE, compression_level = 9,
-  include_directories = TRUE)
+zipr(
+  zipfile,
+  files,
+  recurse = TRUE,
+  compression_level = 9,
+  include_directories = TRUE,
+  keys = basename(normalizePath(files))
+)
 
-zip_append(zipfile, files, recurse = TRUE, compression_level = 9,
-  include_directories = TRUE)
+zip_append(
+  zipfile,
+  files,
+  recurse = TRUE,
+  compression_level = 9,
+  include_directories = TRUE,
+  keys = files
+)
 
-zipr_append(zipfile, files, recurse = TRUE, compression_level = 9,
-  include_directories = TRUE)
+zipr_append(
+  zipfile,
+  files,
+  recurse = TRUE,
+  compression_level = 9,
+  include_directories = TRUE,
+  keys = basename(normalizePath(files))
+)
 }
 \arguments{
 \item{zipfile}{The zip file to create. If the file exists, \code{zip}
@@ -34,6 +58,8 @@ but it also takes the longest.}
 \item{include_directories}{Whether to explicitly include directories
 in the archive. Including directories might confuse MS Office when
 reading docx files, so set this to \code{FALSE} for creating them.}
+
+\item{keys}{Custom file names to set in the zip archive.}
 }
 \value{
 The name of the created zip file, invisibly.
@@ -60,15 +86,15 @@ omitted, even on Unix.
 \section{Relative paths}{
 
 
-The different between \code{zipr} and \code{zip} is how they handle the relative
+The difference between \code{zipr} and \code{zip} is how they handle the relative
 paths of the input files.
 
 For \code{zip} (and \code{zip_append}), the root of the archive is supposed to
 be the current working directory. The paths of the files are fully kept
 in the archive. Absolute paths are also kept. Note that this might result
 non-portable archives: some zip tools do not handle zip archives that
-contain absolute file names, or file names that start with \code{..//} or
-\code{./}. This behavior is kept for compatibility, and we suggest that you
+contain absolute file names, or file names that start with \verb{..//} or
+\verb{./}. This behavior is kept for compatibility, and we suggest that you
 use \code{zipr} and \code{zipr_append} for new code.
 
 E.g. for the following directory structure:\preformatted{foo
@@ -109,6 +135,25 @@ will trigger a reminder message. To suppress this message, you can
 use something like this:\preformatted{withCallingHandlers(
   zip::zip(...),
   deprecated = function(e) NULL)
+}
+}
+
+\section{Custom file structure}{
+
+
+Both \code{zipr} and \code{zip} allow manual specification of the file structure using
+the argument \code{keys}.
+
+Assuming files \code{bar/file1_2}, \code{dir1/file1_2}, \verb{dir1/file2_2"} and \code{foo2} to
+exist in the current working directory, the names can be used to produce a
+custom file structure as follows:\preformatted{zipr("x.zip", c("bar/file1_2", "dir1_2", "foo2"),
+     keys = c("file1", "dir1", "foo2"))
+zip_list("x.zip")$filename
+#> file1
+#> dir1
+#> dir1/file1_2
+#> dir1/file2_2
+#> foo2
 }
 }
 

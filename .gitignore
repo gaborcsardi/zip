@@ -3,6 +3,7 @@
 .RData
 /src/*.o
 /src/zip.so
+/src/zip.dll
 /revdep
 /README.html
 /sources.zip
@@ -13,3 +14,4 @@
 /src/tools/cmdzip.exe
 /src/tools/cmdzip.dSYM
 /r-packages
+zip.Rproj

@@ -80,6 +80,25 @@ NULL
 #'   deprecated = function(e) NULL)
 #' ```
 #'
+#' @section Custom file structure:
+#'
+#' Both `zipr` and `zip` allow manual specification of the file structure using
+#' the argument `keys`.
+#'
+#' Assuming files `bar/file1_2`, `dir1/file1_2`, `dir1/file2_2"` and `foo2` to
+#' exist in the current working directory, the names can be used to produce a
+#' custom file structure as follows:
+#'
+#' ```
+#' zipr("x.zip", c("bar/file1_2", "dir1_2", "foo2"),
+#'      keys = c("file1", "dir1", "foo2"))
+#' zip_list("x.zip")$filename
+#' #> file1
+#' #> dir1
+#' #> dir1/file1_2
+#' #> dir1/file2_2
+#' #> foo2
+#' ```
 #' @param zipfile The zip file to create. If the file exists, `zip`
 #'   overwrites it, but `zip_append` appends to it.
 #' @param files List of file to add to the archive. See details below
@@ -90,6 +109,7 @@ NULL
 #' @param include_directories Whether to explicitly include directories
 #'   in the archive. Including directories might confuse MS Office when
 #'   reading docx files, so set this to `FALSE` for creating them.
+#' @param keys Custom file names to set in the zip archive.
 #' @return The name of the created zip file, invisibly.
 #'
 #' @export
@@ -111,48 +131,50 @@ NULL
 #' zip_list(zipfile)
 
 zip <- function(zipfile, files, recurse = TRUE, compression_level = 9,
-                include_directories = TRUE) {
+                include_directories = TRUE, keys = files) {
   deprecated("zip", "zip::zip() is deprecated, please use zip::zipr() instead")
-  zip_internal(zipfile, files, recurse, compression_level, append = FALSE,
-               keep_path = TRUE, include_directories = include_directories)
+  zip_internal(zipfile, files, keys, recurse, compression_level,
+               append = FALSE, include_directories = include_directories)
 }
 
 #' @rdname zip
 #' @export
-
-zipr <- function(zipfile, files, recurse = TRUE, compression_level = 9,
-                 include_directories = TRUE) {
-  zip_internal(zipfile, files, recurse, compression_level, append = FALSE,
-               keep_path = FALSE, include_directories = include_directories)
+zipr <- function(zipfile, files, recurse = TRUE,
+                 compression_level = 9, include_directories = TRUE,
+                 keys = basename(normalizePath(files))) {
+  zip_internal(zipfile, files, keys, recurse, compression_level,
+               append = FALSE, include_directories = include_directories)
 }
 
 #' @rdname zip
 #' @export
 
 zip_append <- function(zipfile, files, recurse = TRUE,
-                       compression_level = 9, include_directories = TRUE) {
+                       compression_level = 9, include_directories = TRUE,
+                       keys = files) {
   deprecated(
     "zip_append",
     "zip::zip_append() is deprecated, please use zip::zipr_append instead")
-  zip_internal(zipfile, files, recurse, compression_level, append = TRUE,
-               keep_path = TRUE, include_directories = include_directories)
+  zip_internal(zipfile, files, keys, recurse, compression_level,
+               append = TRUE, include_directories = include_directories)
 }
 
 #' @rdname zip
 #' @export
 
 zipr_append <- function(zipfile, files, recurse = TRUE,
-                        compression_level = 9, include_directories = TRUE) {
-  zip_internal(zipfile, files, recurse, compression_level, append = TRUE,
-               keep_path = FALSE, include_directories = include_directories)
+                        compression_level = 9, include_directories = TRUE,
+                        keys = basename(normalizePath(files))) {
+  zip_internal(zipfile, files, keys, recurse, compression_level,
+               append = TRUE, include_directories = include_directories)
 }
 
-zip_internal <- function(zipfile, files, recurse, compression_level,
-                         append, keep_path, include_directories) {
+zip_internal <- function(zipfile, files, keys, recurse, compression_level,
+                         append, include_directories) {
 
   if (any(! file.exists(files))) stop("Some files do not exist")
 
-  data <- get_zip_data(files, recurse, keep_path, include_directories)
+  data <- get_zip_data(files, keys, recurse, include_directories)
   warn_for_dotdot(data$key)
 
   .Call(c_R_zip_zip, zipfile, data$key, data$file, data$dir,

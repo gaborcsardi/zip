@@ -10,7 +10,7 @@ License: CC0
 LazyData: true
 URL: https://github.com/r-lib/zip#readme
 BugReports: https://github.com/r-lib/zip/issues
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 Roxygen: list(markdown = TRUE)
 Suggests:
     covr,

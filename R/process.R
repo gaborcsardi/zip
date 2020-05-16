@@ -7,12 +7,13 @@ get_tool <- function (prog) {
   if (os_type() == "windows") prog <- paste0(prog, ".exe")
 
   exe <- system.file(package = "zip", "bin", .Platform$r_arch, prog)
-    if (exe == "") {
-      pkgpath <- system.file(package = "zip")
-      if (basename(pkgpath) == "inst") pkgpath <- dirname(pkgpath)
-      exe <- file.path(pkgpath, "src", "tools", prog)
-      if (!file.exists(exe)) return("")
-    }
+  if (exe == "") {
+    pkgpath <- system.file(package = "zip")
+    if (basename(pkgpath) == "inst") pkgpath <- dirname(pkgpath)
+    exe <- file.path(pkgpath, "src", "tools", prog)
+    if (!file.exists(exe)) return("")
+  }
+
   exe
 }
 
@@ -79,7 +80,7 @@ unzip_process <- function() {
           stopifnot(
             is_string(zipfile),
             is_string(exdir))
-          exdir <- normalizePath(exdir, winslash = "/", mustWork = FALSE)
+          exdir <- normalizePath(exdir, winslash = "\\", mustWork = FALSE)
           super$initialize(unzip_exe(), c(zipfile, exdir),
                            poll_connection = poll_connection,
                            stderr = stderr, ...)
@@ -171,8 +172,8 @@ zip_process <- function() {
 }
 
 write_zip_params <- function(files, recurse, include_directories, outfile) {
-  data <- get_zip_data(files, recurse, keep_path = FALSE,
-                       include_directories = include_directories)
+  data <- get_zip_data(files, basename(normalizePath(files)),
+                       recurse, include_directories = include_directories)
   mtime <- as.double(file.info(data$file)$mtime)
 
   con <- file(outfile, open = "wb")

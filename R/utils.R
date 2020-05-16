@@ -1,35 +1,77 @@
 
 `%||%` <- function(l, r) if (is.null(l)) r else l
 
-get_zip_data <- function(files, recurse, keep_path, include_directories) {
-  list <- if (keep_path) {
-    get_zip_data_path(files, recurse)
-  } else {
-    get_zip_data_nopath(files, recurse)
+get_zip_data <- function(files, keys, recurse, include_directories) {
+  files <- normalizePath(files)
+  is_dir <- file.info(files)$isdir
+
+  if (!recurse && any(is_dir)) {
+    warning("directories ignored in zip file, specify recurse = TRUE")
+    files <- files[!is_dir]
+    keys <- keys[!is_dir]
+    is_dir <- is_dir[!is_dir]
   }
+
+  if (!length(files)) {
+    return(data.frame(
+      stringsAsFactors = FALSE,
+      key = character(),
+      files = character(),
+      dir = logical()
+    ))
+  }
+
+  zip_data <- do.call(rbind, mapply(
+    function(key, file, is_dir) {
+      if (is_dir) {
+        files <- c(
+          "", # Entry for the parent dir
+          list.files( # Entries for all children (dirs and files)
+            path = file,
+            recursive = TRUE,
+            include.dirs = TRUE,
+            all.files = TRUE,
+            no.. = TRUE
+          )
+        )
+
+        keys <- file.path(key, files)
+        files <- file.path(file, files)
+        dirs <- file.info(files)$isdir
+        keys[dirs & !grepl("/$", keys)] <- paste0(
+          keys[dirs & !grepl("/$", keys)], "/"
+        )
+
+        data.frame(
+          stringsAsFactors = FALSE,
+          key = keys,
+          files = files,
+          dir = dirs
+        )
+      } else {
+        data.frame(
+          stringsAsFactors = FALSE,
+          key = key,
+          files = file,
+          dir = FALSE
+        )
+      }
+    },
+    key = keys,
+    file = files,
+    is_dir = is_dir,
+    SIMPLIFY = FALSE
+  ))
+
+  zip_data <- zip_data[!duplicated(zip_data$key) & zip_data$key != "/", ]
+
+  row.names(zip_data) <- NULL
+  zip_data$files <- normalizePath(zip_data$files)
 
   if (!include_directories) {
-    list <- list[! list$dir, ]
-  }
-
-  list
-}
-
-get_zip_data_path <- function(files, recurse) {
-    if (recurse && length(files)) {
-    data <- do.call(rbind, lapply(files, get_zip_data_path_recursive))
-    dup <- duplicated(data$files)
-    if (any(dup)) data <- data <- data[ !dup, drop = FALSE ]
-    data
-
+    zip_data[!zip_data$dir, ]
   } else {
-    files <- ignore_dirs_with_warning(files)
-    data.frame(
-      stringsAsFactors = FALSE,
-      key = files,
-      files = files,
-      dir = rep(FALSE, length(files))
-    )
+    zip_data
   }
 }
 
@@ -42,82 +84,6 @@ warn_for_dotdot <- function(files) {
             "creating non-portable zip file")
   }
   files
-}
-
-get_zip_data_nopath <- function(files, recurse) {
-  if (recurse && length(files)) {
-    data <- do.call(rbind, lapply(files, get_zip_data_nopath_recursive))
-    dup <- duplicated(data$files)
-    if (any(dup)) data <- data[ !dup, drop = FALSE ]
-    data
-
-  } else {
-    files <- ignore_dirs_with_warning(files)
-    data.frame(
-      stringsAsFactors = FALSE,
-      key = basename(files),
-      file = files,
-      dir = rep(FALSE, length(files))
-    )
-  }
-}
-
-ignore_dirs_with_warning <- function(files) {
-  info <- file.info(files)
-  if (any(info$isdir)) {
-    warning("directories ignored in zip file, specify recurse = TRUE")
-    files <- files[!info$isdir]
-  }
-  files
-}
-
-get_zip_data_path_recursive <- function(x) {
-  if (file.info(x)$isdir) {
-    files <- c(x, dir(x, recursive = TRUE, full.names = TRUE,
-                      all.files = TRUE, include.dirs = TRUE, no.. = TRUE))
-    dir <- file.info(files)$isdir
-    data.frame(
-      stringsAsFactors = FALSE,
-      key = ifelse(dir, paste0(files, "/"), files),
-      file = normalizePath(files),
-      dir = dir
-    )
-  } else {
-    data.frame(
-      stringsAsFactors = FALSE,
-      key = x,
-      file = normalizePath(x),
-      dir = FALSE
-    )
-  }
-}
-
-get_zip_data_nopath_recursive <- function(x) {
-  x <- normalizePath(x)
-  wd <- getwd()
-  on.exit(setwd(wd))
-  setwd(dirname(x))
-  bnx <- basename(x)
-
-  files <- dir(
-    bnx,
-    recursive = TRUE,
-    all.files = TRUE,
-    include.dirs = TRUE,
-    no.. = TRUE
-  )
-
-  key <- c(bnx, file.path(bnx, files))
-  files <- c(x, file.path(dirname(x), bnx, files))
-  dir <- file.info(files)$isdir
-  key <- ifelse(dir, paste0(key, "/"), key)
-
-  data.frame(
-    stringsAsFactors = FALSE,
-    key = key,
-    file = normalizePath(files),
-    dir = dir
-  )
 }
 
 mkdirp <- function(x, ...) {

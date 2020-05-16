@@ -131,6 +131,35 @@ test_that("can compress files and directories", {
   )
 })
 
+test_that("can use names to create custom structure", {
+  on.exit(try(unlink(c(zipfile, tmp, file1, file2), recursive = TRUE)))
+
+  dir.create(tmp <- tempfile())
+  dir.create(dir <- file.path(tmp, "dir1"))
+  cat("first file", file = file.path(dir, "file1"))
+  cat("second file", file = file.path(dir, "file2"))
+  cat("third file", file = file1 <- tempfile())
+  cat("fourth file", file = file2 <- tempfile())
+
+  zipfile <- tempfile(fileext = ".zip")
+
+  expect_silent(
+    withr::with_dir(
+      tmp,
+      zipr(zipfile, c(file1, file2, "dir1"),
+           keys = c("file1_z", "file2_z", "dir1_z"))
+    )
+  )
+
+  expect_true(file.exists(zipfile))
+
+  list <- zip_list(zipfile)
+  expect_equal(
+    list$filename,
+    c("file1_z", "file2_z", "dir1_z/", "dir1_z/file1", "dir1_z/file2")
+  )
+})
+
 test_that("warning for directories in non-recursive mode", {
 
   on.exit(try(unlink(c(zipfile, tmp, file1, file2), recursive = TRUE)))

@@ -4,8 +4,7 @@
 \alias{unzip}
 \title{Uncompress 'zip' Archives}
 \usage{
-unzip(zipfile, files = NULL, overwrite = TRUE, junkpaths = FALSE,
-  exdir = ".")
+unzip(zipfile, files = NULL, overwrite = TRUE, junkpaths = FALSE, exdir = ".")
 }
 \arguments{
 \item{zipfile}{Path to the zip file to uncompress.}
